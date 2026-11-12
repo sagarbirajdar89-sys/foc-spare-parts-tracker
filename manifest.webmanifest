@@ -1,0 +1,9 @@
+{
+  "name": "FOC Spare Parts Tracker",
+  "short_name": "FOC Tracker",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f3f6fa",
+  "theme_color": "#102a43",
+  "description": "Single-user FOC spare parts loan and dealer settlement tracker"
+}

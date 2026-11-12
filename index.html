@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#102a43"><meta name="description" content="FOC Spare Parts Loan Management">
+<link rel="manifest" href="manifest.webmanifest">
+<title>FOC Spare Parts Tracker</title>
+<style>
+:root{--navy:#102a43;--blue:#1769aa;--bg:#f3f6fa;--card:#fff;--ink:#172b4d;--muted:#62748a;--line:#dce4ed;--green:#18794e;--amber:#a15c00;--red:#b42318}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Arial}
+header{background:var(--navy);color:#fff;padding:18px max(16px,calc((100% - 1180px)/2));display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+header h1{font-size:20px;margin:0}header small{opacity:.8}.wrap{max-width:1180px;margin:auto;padding:18px}
+nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}.tab,button{border:0;border-radius:9px;padding:10px 13px;font-weight:650;cursor:pointer}
+.tab{background:#e4ebf3;color:var(--ink)}.tab.active{background:var(--blue);color:white}
+button.primary{background:var(--blue);color:white}button.secondary{background:#e8eef5;color:var(--ink)}button.danger{background:#fde8e7;color:var(--red)}button.good{background:#e1f3e9;color:var(--green)}
+button:disabled{opacity:.45;cursor:not-allowed}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px;box-shadow:0 2px 8px #19324b08}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.metric{padding:16px;border-radius:12px;background:#f8fafc;border:1px solid var(--line)}.metric b{display:block;font-size:27px}.metric span{color:var(--muted);font-size:13px}
+h2{font-size:18px;margin:0 0 14px}h3{font-size:15px;margin:0 0 10px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.between{justify-content:space-between}
+label{font-size:13px;color:var(--muted);display:block;margin-bottom:5px;font-weight:600}
+input,select,textarea{width:100%;padding:10px 11px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;color:var(--ink);font:inherit}
+textarea{min-height:72px;resize:vertical}.fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.field{min-width:0}.field.wide{grid-column:1/-1}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:760px}th,td{padding:10px 9px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{background:#f7f9fc;color:#52657a;position:sticky;top:0}
+.tablebox{overflow:auto;border:1px solid var(--line);border-radius:10px}
+.badge{display:inline-block;border-radius:20px;padding:3px 8px;font-size:11px;font-weight:700;background:#edf2f7}.open{background:#fff1d6;color:#875000}.closed{background:#e0f3e8;color:#17633e}.late{background:#fde8e7;color:#a32119}
+.muted{color:var(--muted)}.hidden{display:none!important}.empty{text-align:center;color:var(--muted);padding:28px}.small{font-size:12px}.split{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.notice{padding:11px 13px;border-radius:9px;background:#edf5ff;color:#194d7a;font-size:13px;margin-bottom:12px}
+dialog{border:0;border-radius:14px;max-width:560px;width:calc(100% - 24px);padding:20px;box-shadow:0 20px 60px #0003}dialog::backdrop{background:#102a4380}
+footer{color:var(--muted);font-size:12px;text-align:center;padding:18px}
+@media(max-width:760px){.wrap{padding:12px}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}.fields{grid-template-columns:repeat(2,minmax(0,1fr))}.fields .wide{grid-column:1/-1}header{padding:15px}.split{grid-template-columns:1fr}.tab{flex:1}.tablebox{margin:0 -2px}}
+@media(max-width:420px){.fields{grid-template-columns:1fr}.fields .wide{grid-column:auto}.metric b{font-size:23px}}
+@media print{header,nav,.no-print,footer{display:none!important}body{background:white}.wrap{max-width:none;padding:0}.panel{box-shadow:none;break-inside:avoid}}
+</style>
+</head>
+<body>
+<header><div><h1>FOC Spare Parts Tracker</h1><small>Loan • FOC supply • Dealer settlement</small></div><div class="row"><span id="saveState" class="small">Local database</span><button class="secondary" id="installBtn" hidden>Install app</button></div></header>
+<div class="wrap">
+<nav class="no-print">
+<button class="tab active" data-page="dashboard">Dashboard</button>
+<button class="tab" data-page="new">New loan</button>
+<button class="tab" data-page="loans">Loan register</button>
+<button class="tab" data-page="ledger">Dealer ledger</button>
+<button class="tab" data-page="reports">Reports & backup</button>
+</nav>
+
+<section id="dashboard" class="page">
+<div class="grid" id="metrics"></div>
+<div class="split" style="margin-top:14px">
+<div class="panel"><h2>Outstanding by ageing</h2><div id="ageing"></div></div>
+<div class="panel"><h2>Quick actions</h2><div class="row"><button class="primary" onclick="showPage('new')">＋ Record a loan</button><button class="secondary" onclick="showPage('loans')">View all loans</button></div><p class="muted small">A loan remains open until the dealer has received the replacement quantity or the unused quantity has been returned.</p></div>
+</div>
+<div class="panel"><h2>Latest open loans</h2><div id="recent"></div></div>
+</section>
+
+<section id="new" class="page hidden">
+<div class="panel"><h2 id="formTitle">Record a new dealer loan</h2>
+<div class="notice">Enter the quantity borrowed from the dealer. Later, record company FOC supply and the dealer's actual receipt separately.</div>
+<form id="loanForm">
+<input type="hidden" id="editId">
+<div class="fields">
+<div class="field"><label>Dealer name *</label><input id="dealer" required placeholder="Dealer / spare parts shop"></div>
+<div class="field"><label>Part code *</label><input id="part" required placeholder="e.g. 2919001"></div>
+<div class="field"><label>Part description</label><input id="description" placeholder="Part name / description"></div>
+<div class="field"><label>Quantity borrowed *</label><input id="qty" required type="number" min="1" step="1" value="1"></div>
+<div class="field"><label>Loan received date *</label><input id="loanDate" required type="date"></div>
+<div class="field"><label>Customer issue date</label><input id="issueDate" type="date"></div>
+<div class="field"><label>Customer name</label><input id="customer" placeholder="Customer / site"></div>
+<div class="field"><label>Service call / job card no.</label><input id="job" placeholder="Service reference"></div>
+<div class="field"><label>Company FOC claim no.</label><input id="claim" placeholder="Claim / order reference"></div>
+<div class="field"><label>Claim submitted date</label><input id="claimDate" type="date"></div>
+<div class="field"><label>Part value (optional ₹)</label><input id="value" type="number" min="0" step="0.01" placeholder="0.00"></div>
+<div class="field"><label>Expected settlement date</label><input id="dueDate" type="date"></div>
+<div class="field wide"><label>Remarks</label><textarea id="remarks" placeholder="Reason for FOC, approval details, etc."></textarea></div>
+</div>
+<div class="actions"><button class="primary" type="submit">Save loan</button><button class="secondary" type="button" id="resetForm">Clear form</button></div>
+</form></div>
+</section>
+
+<section id="loans" class="page hidden">
+<div class="panel"><div class="row between"><h2>Loan register</h2><button class="secondary no-print" onclick="exportCSV('loans')">Export register CSV</button></div>
+<div class="row no-print" style="margin-bottom:12px"><input id="loanSearch" placeholder="Search dealer, part, customer, job card or claim..." style="flex:2"><select id="loanStatus" style="flex:1"><option value="all">All status</option><option value="open">Outstanding</option><option value="closed">Settled / returned</option></select></div>
+<div id="loanTable" class="tablebox"></div></div>
+</section>
+
+<section id="ledger" class="page hidden">
+<div class="panel"><div class="row between"><h2>Dealer-wise ledger</h2><button class="secondary no-print" onclick="exportCSV('ledger')">Export ledger CSV</button></div>
+<div class="fields no-print"><div class="field"><label>Select dealer</label><select id="dealerSelect"><option value="">All dealers</option></select></div><div class="field"><label>Search part code</label><input id="ledgerPart" placeholder="Part code"></div></div>
+<div id="ledgerSummary" style="margin:14px 0"></div><div id="ledgerTable" class="tablebox"></div></div>
+</section>
+
+<section id="reports" class="page hidden">
+<div class="panel"><h2>Reports</h2><div class="fields">
+<div class="field"><label>From date</label><input id="fromDate" type="date"></div><div class="field"><label>To date</label><input id="toDate" type="date"></div><div class="field"><label>Report type</label><select id="reportType"><option value="all">All loans</option><option value="open">Outstanding only</option><option value="closed">Settled only</option></select></div>
+</div><div class="actions no-print"><button class="primary" onclick="runReport()">Generate report</button><button class="secondary" onclick="window.print()">Print / Save PDF</button><button class="secondary" onclick="exportCSV('report')">Download Excel-compatible CSV</button></div><div id="reportResult" style="margin-top:14px"></div></div>
+<div class="panel"><h2>Backup & restore</h2><p class="muted small">Download a full JSON backup regularly. Restore it on this browser to recover your records. CSV exports are for analysis; JSON backup preserves all app data.</p>
+<div class="actions no-print"><button class="primary" onclick="backup()">Download full backup (JSON)</button><label class="secondary" style="padding:10px 13px;border-radius:9px;cursor:pointer">Restore backup <input id="restoreFile" type="file" accept=".json,application/json" hidden></label><button class="danger" onclick="clearAll()">Delete all records</button></div>
+<div class="notice" style="margin-top:12px">Storage is on this browser/device. To use the same records on multiple devices, the app needs a hosted cloud database and sign-in; this standalone version does not sync devices.</div>
+</div>
+</section>
+<footer>FOC Spare Parts Tracker • Single-user edition • Keep regular backups</footer>
+</div>
+
+<dialog id="settleDialog"><form method="dialog" id="settleForm"><h2 id="settleTitle">Settle received quantity</h2><input type="hidden" id="settleId">
+<div class="notice">Enter only the NEW quantities for this settlement entry, not the running totals. You can make multiple partial settlements.</div>
+<div class="fields">
+<div class="field"><label>New company FOC quantity supplied *</label><input id="suppliedQty" type="number" min="0" step="1" value="0"></div>
+<div class="field"><label>New dealer received quantity to settle *</label><input id="receivedQty" type="number" min="0" step="1" value="0"></div>
+<div class="field"><label>New unused quantity returned</label><input id="returnedQty" type="number" min="0" step="1" value="0"></div>
+<div class="field"><label>Supply / receipt date</label><input id="settleDate" type="date"></div>
+<div class="field wide"><label>Settlement reference / remarks</label><input id="settleRef" placeholder="Delivery challan, company dispatch, dealer confirmation"></div>
+</div><p id="settleHelp" class="muted small"></p><div id="settlementHistory" class="small"></div><div class="actions"><button class="primary" value="save" id="saveSettlement">Save quantities</button><button class="secondary" value="cancel">Cancel</button></div></form></dialog>
+<script>
+const DB_NAME='FOCSparePartsDB', STORE='loans'; let db, reportRows=[];
+const $=id=>document.getElementById(id);
+const today=()=>new Date().toISOString().slice(0,10);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function openDB(){return new Promise((resolve,reject)=>{const req=indexedDB.open(DB_NAME,1);req.onupgradeneeded=()=>{const d=req.result;if(!d.objectStoreNames.contains(STORE)){const st=d.createObjectStore(STORE,{keyPath:'id'});st.createIndex('dealer','dealer');st.createIndex('part','part');}};req.onsuccess=()=>{db=req.result;resolve()};req.onerror=()=>reject(req.error)})}
+function all(){return new Promise((res,rej)=>{const r=db.transaction(STORE).objectStore(STORE).getAll();r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)})}
+function put(x){return new Promise((res,rej)=>{const r=db.transaction(STORE,'readwrite').objectStore(STORE).put(x);r.onsuccess=()=>res();r.onerror=()=>rej(r.error)})}
+function del(id){return new Promise((res,rej)=>{const r=db.transaction(STORE,'readwrite').objectStore(STORE).delete(id);r.onsuccess=()=>res();r.onerror=()=>rej(r.error)})}
+function outstanding(x){return Math.max(0,Number(x.qty)-Number(x.receivedQty||0)-Number(x.returnedQty||0))}
+function status(x){return outstanding(x)===0?'closed':'open'}
+function age(x){const end=status(x)==='closed'?(x.closedDate||today()):today();return Math.max(0,Math.floor((new Date(end+'T00:00:00')-new Date(x.loanDate+'T00:00:00'))/86400000))}
+function badge(x){if(status(x)==='closed')return '<span class="badge closed">Settled</span>';const a=age(x);return `<span class="badge ${a>30?'late':'open'}">${a>30?'Overdue · ':''}${a} days</span>`}
+function money(v){return v?('₹'+Number(v).toLocaleString('en-IN',{maximumFractionDigits:2})):'—'}
+async function refresh(){const rows=await all();$('saveState').textContent='Saved locally • '+rows.length+' records';renderDashboard(rows);renderLoans(rows);renderLedger(rows);populateDealers(rows)}
+function showPage(p){document.querySelectorAll('.page').forEach(x=>x.classList.add('hidden'));$(p).classList.remove('hidden');document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.page===p));if(p==='ledger')refresh()}
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>showPage(b.dataset.page));
+function renderDashboard(rows){const open=rows.filter(x=>status(x)==='open'),closed=rows.length-open.length,qty=open.reduce((a,x)=>a+outstanding(x),0),claims=open.filter(x=>!x.claim).length;
+const cards=[['Active loans',open.length],['Outstanding parts',qty],['Over 30 days',open.filter(x=>age(x)>30).length],['Settled loans',closed]];
+$('metrics').innerHTML=cards.map(c=>`<div class="metric"><b>${c[1]}</b><span>${c[0]}</span></div>`).join('');
+const buckets=[['0–7 days',0,7],['8–15 days',8,15],['16–30 days',16,30],['31–60 days',31,60],['60+ days',61,99999]];
+$('ageing').innerHTML=buckets.map(([n,a,b])=>{const q=open.filter(x=>age(x)>=a&&age(x)<=b).reduce((s,x)=>s+outstanding(x),0);return `<div class="row between" style="padding:7px 0;border-bottom:1px solid var(--line)"><span>${n}</span><b>${q} pcs</b></div>`}).join('');
+$('recent').innerHTML=tableHTML(open.sort((a,b)=>b.loanDate.localeCompare(a.loanDate)).slice(0,8));
+}
+function tableHTML(rows){if(!rows.length)return '<div class="empty">No matching records.</div>';return `<table><thead><tr><th>Loan ID</th><th>Dealer</th><th>Part</th><th>Borrowed</th><th>FOC supplied</th><th>Dealer received</th><th>Outstanding</th><th>Age / status</th><th class="no-print">Action</th></tr></thead><tbody>${rows.map(x=>`<tr><td>${esc(x.id)}</td><td>${esc(x.dealer)}</td><td><b>${esc(x.part)}</b><br>${esc(x.description)}</td><td>${x.qty}</td><td>${x.suppliedQty||0}</td><td>${x.receivedQty||0}</td><td><b>${outstanding(x)}</b></td><td>${badge(x)}</td><td class="no-print"><button class="secondary" onclick="editLoan('${x.id}')">Edit</button> <button class="good" onclick="openSettlement('${x.id}')">Update</button></td></tr>`).join('')}</tbody></table>`}
+function renderLoans(rows){const q=$('loanSearch').value.toLowerCase(),s=$('loanStatus').value;const f=rows.filter(x=>(s==='all'||status(x)===s)&&[x.id,x.dealer,x.part,x.description,x.customer,x.job,x.claim].join(' ').toLowerCase().includes(q));$('loanTable').innerHTML=tableHTML(f)}
+$('loanSearch').oninput=refresh;$('loanStatus').onchange=refresh;
+function populateDealers(rows){const old=$('dealerSelect').value,ds=[...new Set(rows.map(x=>x.dealer))].sort();$('dealerSelect').innerHTML='<option value="">All dealers</option>'+ds.map(d=>`<option>${esc(d)}</option>`).join('');$('dealerSelect').value=ds.includes(old)?old:''}
+function renderLedger(rows){const d=$('dealerSelect').value,p=$('ledgerPart').value.toLowerCase();const f=rows.filter(x=>(!d||x.dealer===d)&&(!p||x.part.toLowerCase().includes(p)));const o=f.filter(x=>status(x)==='open');$('ledgerSummary').innerHTML=`<div class="row"><div class="metric"><b>${o.length}</b><span>Open loans</span></div><div class="metric"><b>${o.reduce((s,x)=>s+outstanding(x),0)}</b><span>Parts outstanding</span></div><div class="metric"><b>${f.length}</b><span>Total loan records</span></div></div>`;$('ledgerTable').innerHTML=tableHTML(f)}
+$('dealerSelect').onchange=refresh;$('ledgerPart').oninput=refresh;
+$('loanForm').onsubmit=async e=>{e.preventDefault();const id=$('editId').value||('FOC-'+Date.now().toString().slice(-9));const old=(await all()).find(x=>x.id===id)||{};const x={...old,id,dealer:$('dealer').value.trim(),part:$('part').value.trim(),description:$('description').value.trim(),qty:Number($('qty').value),loanDate:$('loanDate').value,issueDate:$('issueDate').value,customer:$('customer').value.trim(),job:$('job').value.trim(),claim:$('claim').value.trim(),claimDate:$('claimDate').value,value:Number($('value').value||0),dueDate:$('dueDate').value,remarks:$('remarks').value,suppliedQty:old.suppliedQty||0,receivedQty:old.receivedQty||0,returnedQty:old.returnedQty||0,settlements:old.settlements||[],created:old.created||new Date().toISOString()};if(x.receivedQty+x.returnedQty>x.qty){alert('Dealer received + returned quantity cannot exceed quantity borrowed.');return}await put(x);resetForm();await refresh();showPage('loans');};
+function resetForm(){$('loanForm').reset();$('editId').value='';$('qty').value=1;$('loanDate').value=today();$('formTitle').textContent='Record a new dealer loan'}
+$('resetForm').onclick=resetForm;
+window.editLoan=async id=>{const x=(await all()).find(r=>r.id===id);if(!x)return;showPage('new');$('formTitle').textContent='Edit loan '+id;$('editId').value=id;for(const [k,v] of Object.entries({dealer:x.dealer,part:x.part,description:x.description,qty:x.qty,loanDate:x.loanDate,issueDate:x.issueDate,customer:x.customer,job:x.job,claim:x.claim,claimDate:x.claimDate,value:x.value,dueDate:x.dueDate,remarks:x.remarks}))$(k).value=v??''};
+window.openSettlement=async id=>{const x=(await all()).find(r=>r.id===id);if(!x)return;$('settleId').value=id;$('settleTitle').textContent='Partial quantity settlement · '+id;$('suppliedQty').value=0;$('receivedQty').value=0;$('returnedQty').value=0;$('settleDate').value=today();$('settleRef').value='';$('settleHelp').textContent=`Borrowed: ${x.qty} | Previously supplied by company: ${x.suppliedQty||0} | Previously received by dealer: ${x.receivedQty||0} | Previously returned: ${x.returnedQty||0} | Still outstanding: ${outstanding(x)}. Enter only this transaction's new quantities.`;const hist=x.settlements||[];$('settlementHistory').innerHTML=hist.length?'<b>Previous settlement entries</b><ul>'+hist.map(h=>`<li>${esc(h.date)} — company supplied: ${h.companySupplied||0}, dealer received: ${h.dealerReceived||0}, returned: ${h.returned||0}${h.reference?' · '+esc(h.reference):''}</li>`).join('')+'</ul>':'<span class="muted">No settlement entries yet.</span>';$('settleDialog').showModal()};
+$('settleForm').onsubmit=async e=>{e.preventDefault();const id=$('settleId').value,rows=await all(),x=rows.find(r=>r.id===id);if(!x)return;const addSupplied=Number($('suppliedQty').value),addReceived=Number($('receivedQty').value),addReturned=Number($('returnedQty').value);if(!Number.isInteger(addSupplied)||!Number.isInteger(addReceived)||!Number.isInteger(addReturned)||addSupplied<0||addReceived<0||addReturned<0){alert('Enter whole, non-negative quantities.');return}const nextSupplied=Number(x.suppliedQty||0)+addSupplied,nextReceived=Number(x.receivedQty||0)+addReceived,nextReturned=Number(x.returnedQty||0)+addReturned;if(nextSupplied>x.qty){alert('Total company FOC supplied quantity cannot exceed quantity borrowed.');return}if(nextReceived>nextSupplied){alert('Total dealer received quantity cannot exceed total company FOC supplied quantity. Record company supply first.');return}if(nextReceived+nextReturned>x.qty){alert('Total dealer received + returned quantity cannot exceed quantity borrowed.');return}if(addSupplied+addReceived+addReturned===0){alert('Enter at least one quantity to record.');return}x.suppliedQty=nextSupplied;x.receivedQty=nextReceived;x.returnedQty=nextReturned;x.settlements=x.settlements||[];x.settlements.push({date:$('settleDate').value,companySupplied:addSupplied,dealerReceived:addReceived,returned:addReturned,reference:$('settleRef').value});if(outstanding(x)===0)x.closedDate=$('settleDate').value;else delete x.closedDate;await put(x);$('settleDialog').close();await refresh()};
+function csv(rows){const cols=['id','dealer','part','description','qty','suppliedQty','receivedQty','returnedQty','outstanding','loanDate','issueDate','customer','job','claim','claimDate','dueDate','value','ageDays','status','remarks'];const val=(x,k)=>k==='outstanding'?outstanding(x):k==='ageDays'?age(x):k==='status'?status(x):x[k]??'';return [cols.join(','),...rows.map(x=>cols.map(k=>'"'+String(val(x,k)).replace(/"/g,'""')+'"').join(','))].join('\r\n')}
+function download(name,content,type){const a=document.createElement('a'),u=URL.createObjectURL(new Blob([content],{type}));a.href=u;a.download=name;a.click();URL.revokeObjectURL(u)}
+window.exportCSV=async kind=>{let rows=await all();if(kind==='ledger'){const d=$('dealerSelect').value;rows=rows.filter(x=>!d||x.dealer===d)}if(kind==='report')rows=reportRows;download('FOC_'+kind+'_'+today()+'.csv','\ufeff'+csv(rows),'text/csv;charset=utf-8')};
+window.runReport=async()=>{let rows=await all(),f=$('fromDate').value,t=$('toDate').value,s=$('reportType').value;rows=rows.filter(x=>(!f||x.loanDate>=f)&&(!t||x.loanDate<=t)&&(s==='all'||status(x)===s));reportRows=rows;$('reportResult').innerHTML=`<p><b>${rows.length}</b> records · <b>${rows.reduce((n,x)=>n+outstanding(x),0)}</b> parts outstanding</p><div class="tablebox">${tableHTML(rows)}</div>`};
+window.backup=async()=>{const data={app:'FOC Spare Parts Tracker',version:1,exportedAt:new Date().toISOString(),loans:await all()};download('FOC_backup_'+today()+'.json',JSON.stringify(data,null,2),'application/json')};
+$('restoreFile').onchange=async e=>{const file=e.target.files[0];if(!file)return;try{const d=JSON.parse(await file.text());if(!Array.isArray(d.loans))throw Error('Invalid backup');if(!confirm(`Restore ${d.loans.length} records? Existing records with the same ID will be replaced.`))return;for(const x of d.loans)await put(x);await refresh();alert('Backup restored.')}catch(err){alert('Could not restore: '+err.message)}e.target.value=''};
+window.clearAll=async()=>{if(!confirm('Permanently delete every loan record from this browser? Download a backup first.'))return;const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).clear();tx.oncomplete=refresh};
+$('loanDate').value=today();$('issueDate').value=today();
+openDB().then(refresh).catch(e=>{alert('Browser storage could not be opened: '+e.message)});
+let installPrompt;$('installBtn').onclick=async()=>{if(installPrompt){installPrompt.prompt();await installPrompt.userChoice;installPrompt=null;$('installBtn').hidden=true}};
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installPrompt=e;$('installBtn').hidden=false});
+if('serviceWorker'in navigator && location.protocol.startsWith('http'))navigator.serviceWorker.register('./sw.js').catch(()=>{});
+</script>
+</body></html>
